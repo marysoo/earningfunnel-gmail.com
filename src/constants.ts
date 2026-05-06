@@ -10,7 +10,7 @@ export const LEADERS = {
 };
 
 export const CONTACT_INFO = {
-  whatsapp: "0706 819 2881",
+  whatsapp: "+234 706 819 2881",
   email: "tsukwasjaphet01@gmail.com"
 };
 
