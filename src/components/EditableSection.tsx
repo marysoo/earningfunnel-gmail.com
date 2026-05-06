@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Edit2, Trash2, Plus, Save, X } from 'lucide-react';
+import { Edit2, Plus, Save, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PageSection, firebaseService } from '../lib/firebaseService';
 
@@ -18,12 +18,6 @@ export default function EditableSection({ section, isAdmin, children }: Editable
     setIsEditing(false);
   };
 
-  const handleDelete = async () => {
-    if (confirm('Are you sure you want to delete this section?')) {
-      await firebaseService.deleteSection(section.sectionId);
-    }
-  };
-
   if (!isAdmin) return <>{children}</>;
 
   return (
@@ -34,12 +28,6 @@ export default function EditableSection({ section, isAdmin, children }: Editable
           className="p-2 bg-zinc-900 border border-gold/50 text-gold rounded-full hover:bg-gold hover:text-white transition-all shadow-xl"
         >
           <Edit2 size={16} />
-        </button>
-        <button 
-          onClick={handleDelete}
-          className="p-2 bg-zinc-900 border border-red-500/50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-all shadow-xl"
-        >
-          <Trash2 size={16} />
         </button>
       </div>
 

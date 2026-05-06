@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Mail, MessageCircle, Phone, Menu, X, ArrowRight, Sparkles, LogIn, LogOut, Plus } from 'lucide-react';
+import { Mail, MessageCircle, Phone, Menu, X, ArrowRight, Sparkles, LogIn, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { MINISTRY_NAME, LEADERS, CONTACT_INFO } from './constants';
 import GivingHub from './components/GivingHub';
@@ -20,7 +20,7 @@ export default function App() {
   useEffect(() => {
     const unsub = firebaseService.subscribeSections((data) => {
       if (data.length === 0 && isAdmin) {
-        // Initial bootstrap if empty - only essential hero
+        // Initial bootstrap if empty
         const initial: PageSection[] = [
           { 
             sectionId: 'hero', 
@@ -28,37 +28,30 @@ export default function App() {
             subtitle: `An oasis of revelation led by ${LEADERS.prophet} and ${LEADERS.pastor}.`,
             content: "Through your giving, we are able to reach the world with the message of illumination and excellence. Your seed is a testimony of your faith.",
             order: 0,
-            imageUrl: "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?q=80&w=2069&auto=format&fit=crop"
+            imageUrl: "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?q=80&w=2061&auto=format&fit=crop"
+          },
+          {
+            sectionId: 'about',
+            title: 'Our Divine Mandate',
+            subtitle: 'Enlightening hearts with the knowledge of God\'s glory.',
+            content: "Photizo Porche Christian Assembly is more than a church; it is a portal of divine illumination. Our name, derived from the Greek 'Photizo,' signifies our sacred mandate to enlighten hearts and manifest kingdom excellence.\n\nUnder the leadership of Prophet Japeth Tsukwas, we are building a global community dedicated to supernatural manifestations and purposeful living.",
+            order: 1,
+            imageUrl: "https://images.unsplash.com/photo-1444464666168-49d633b86747?q=80&w=2069&auto=format&fit=crop"
           }
         ];
         initial.forEach(s => firebaseService.upsertSection(s));
       }
-      setSections(data);
+      // Filter to only allow core sections
+      setSections(data.filter(s => ['hero', 'about'].includes(s.sectionId)).sort((a, b) => (a.order || 0) - (b.order || 0)));
     });
     return () => unsub();
   }, [isAdmin]);
-
-  const handleAddSection = async () => {
-    const id = `section-${Date.now()}`;
-    await firebaseService.upsertSection({
-      sectionId: id,
-      title: 'New Section',
-      content: 'Edit this content...',
-      order: sections.length
-    });
-  };
 
   return (
     <div className="min-h-screen">
       {/* Admin Bar */}
       {isAdmin && (
         <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3">
-          <button 
-            onClick={handleAddSection}
-            className="p-4 bg-gold text-white rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center gap-2 group"
-          >
-            <Plus /> <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500">Add Section</span>
-          </button>
           <button 
             onClick={logout}
             className="p-4 bg-zinc-900 border border-zinc-800 text-zinc-400 rounded-full shadow-2xl hover:text-red-500 transition-colors"
@@ -235,10 +228,17 @@ export default function App() {
               >{new Date().getFullYear()}</span> Photizo Porche. All Rights Reserved.
             </p>
           </div>
-          <div className="flex gap-8 text-xs text-zinc-500 uppercase tracking-widest font-medium">
+          <div className="flex flex-wrap justify-center gap-8 text-xs text-zinc-500 uppercase tracking-widest font-medium">
             <a href="#" className="hover:text-gold transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-gold transition-colors">Terms of Service</a>
-            {isAdmin && (
+            {!user ? (
+              <button 
+                onClick={login}
+                className="hover:text-gold transition-colors cursor-pointer flex items-center gap-1 opacity-20 hover:opacity-100 transition-opacity"
+              >
+                <LogIn size={12} /> Staff Portal
+              </button>
+            ) : (
               <span className="text-gold flex items-center gap-1 animate-pulse">
                 <Sparkles size={14} /> Admin Active
               </span>
