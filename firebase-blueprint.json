@@ -1,0 +1,88 @@
+{
+  "entities": {
+    "SiteSettings": {
+      "title": "Site Settings",
+      "description": "Global configuration for the ministry",
+      "type": "object",
+      "properties": {
+        "ministryName": { "type": "string" },
+        "prophetName": { "type": "string" },
+        "pastorName": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "email": { "type": "string" }
+      },
+      "required": ["ministryName", "prophetName", "whatsapp", "email"]
+    },
+    "PrayerRequest": {
+[... (rest of PrayerRequest) ...]
+    },
+    "PageSection": {
+      "title": "Page Section",
+      "description": "A modular section of a page that can be edited",
+      "type": "object",
+      "properties": {
+        "sectionId": { "type": "string" },
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "content": { "type": "string" },
+        "order": { "type": "number" },
+        "imageUrl": { "type": "string" }
+      },
+      "required": ["sectionId", "title", "content", "order"]
+    },
+    "GivingSystem": {
+      "title": "Giving System",
+      "description": "Configuration for the giving dropdown and methods",
+      "type": "object",
+      "properties": {
+        "options": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "europeBankDetails": {
+          "type": "object",
+          "properties": {
+            "bankName": { "type": "string" },
+            "accountName": { "type": "string" },
+            "iban": { "type": "string" },
+            "swift": { "type": "string" }
+          }
+        }
+      }
+    },
+    "LiveStream": {
+      "title": "Live Stream Config",
+      "description": "Configuration for the active live stream",
+      "type": "object",
+      "properties": {
+        "isLive": { "type": "boolean" },
+        "streamId": { "type": "string", "description": "YouTube or Vimeo ID" },
+        "platform": { "type": "string", "enum": ["youtube", "vimeo"] },
+        "title": { "type": "string" }
+      },
+      "required": ["isLive", "streamId", "platform"]
+    }
+  },
+  "firestore": {
+    "/settings/global": {
+      "schema": "SiteSettings",
+      "description": "Global site metadata"
+    },
+    "/sections/{sectionId}": {
+      "schema": "PageSection",
+      "description": "Modular content blocks"
+    },
+    "/settings/giving": {
+      "schema": "GivingSystem",
+      "description": "Giving configuration"
+    },
+    "/prayerRequests/{requestId}": {
+      "schema": "PrayerRequest",
+      "description": "User submitted prayer needs"
+    },
+    "/settings/stream": {
+      "schema": "LiveStream",
+      "description": "Live streaming configuration"
+    }
+  }
+}

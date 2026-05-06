@@ -1,0 +1,251 @@
+import { motion, AnimatePresence } from 'motion/react';
+import { Mail, MessageCircle, Phone, Menu, X, ArrowRight, Sparkles, LogIn, LogOut, Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MINISTRY_NAME, LEADERS, CONTACT_INFO } from './constants';
+import GivingHub from './components/GivingHub';
+import PrayerSystem from './components/PrayerSystem';
+import LiveStreamHero from './components/LiveStreamHero';
+import { useAuth } from './lib/AuthContext';
+import { login, logout } from './lib/firebase';
+import { PageSection, firebaseService } from './lib/firebaseService';
+import EditableSection from './components/EditableSection';
+import Markdown from 'react-markdown';
+
+export default function App() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, isAdmin } = useAuth();
+  const [sections, setSections] = useState<PageSection[]>([]);
+  const [isAddingSection, setIsAddingSection] = useState(false);
+
+  useEffect(() => {
+    const unsub = firebaseService.subscribeSections((data) => {
+      if (data.length === 0 && isAdmin) {
+        // Initial bootstrap if empty - only essential hero
+        const initial: PageSection[] = [
+          { 
+            sectionId: 'hero', 
+            title: 'Illuminating the Soul with Excellence', 
+            subtitle: `An oasis of revelation led by ${LEADERS.prophet} and ${LEADERS.pastor}.`,
+            content: "Through your giving, we are able to reach the world with the message of illumination and excellence. Your seed is a testimony of your faith.",
+            order: 0,
+            imageUrl: "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?q=80&w=2069&auto=format&fit=crop"
+          }
+        ];
+        initial.forEach(s => firebaseService.upsertSection(s));
+      }
+      setSections(data);
+    });
+    return () => unsub();
+  }, [isAdmin]);
+
+  const handleAddSection = async () => {
+    const id = `section-${Date.now()}`;
+    await firebaseService.upsertSection({
+      sectionId: id,
+      title: 'New Section',
+      content: 'Edit this content...',
+      order: sections.length
+    });
+  };
+
+  return (
+    <div className="min-h-screen">
+      {/* Admin Bar */}
+      {isAdmin && (
+        <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3">
+          <button 
+            onClick={handleAddSection}
+            className="p-4 bg-gold text-white rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center gap-2 group"
+          >
+            <Plus /> <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500">Add Section</span>
+          </button>
+          <button 
+            onClick={logout}
+            className="p-4 bg-zinc-900 border border-zinc-800 text-zinc-400 rounded-full shadow-2xl hover:text-red-500 transition-colors"
+            title="Logout Admin"
+          >
+            <LogOut size={24} />
+          </button>
+        </div>
+      )}
+
+      {/* Navigation */}
+      <nav className="fixed top-0 w-full z-50 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-900">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-lg font-bold tracking-tighter text-white glow-text">{MINISTRY_NAME}</span>
+            <span className="text-[10px] text-zinc-500 uppercase tracking-[0.2em]">Excellence & Revelation</span>
+          </div>
+          
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium">
+            <a href="#about" className="hover:text-gold transition-colors">About Us</a>
+            <a href="#giving" className="hover:text-gold transition-colors">Giving</a>
+            <a href="#contact" className="hover:text-gold transition-colors">Contact</a>
+            <button className="bg-zinc-100 text-zinc-950 px-5 py-2.5 rounded-full font-bold hover:bg-gold hover:text-white transition-all cursor-pointer">
+              Live Service
+            </button>
+          </div>
+
+          <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            {isMenuOpen ? <X /> : <Menu />}
+          </button>
+        </div>
+      </nav>
+
+      {/* Sidebar Mobile Menu */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div 
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            className="fixed inset-0 z-[60] bg-zinc-950 p-8 flex flex-col gap-8 md:hidden"
+          >
+            <button onClick={() => setIsMenuOpen(false)} className="self-end"><X size={32} /></button>
+            <div className="flex flex-col gap-6 text-2xl font-serif">
+              <a href="#about" onClick={() => setIsMenuOpen(false)}>About Us</a>
+              <a href="#giving" onClick={() => setIsMenuOpen(false)}>Giving</a>
+              <a href="#contact" onClick={() => setIsMenuOpen(false)}>Contact</a>
+            </div>
+            {!user && (
+              <button 
+                onClick={() => { login(); setIsMenuOpen(false); }}
+                className="mt-auto flex items-center gap-2 text-zinc-500 border-t border-zinc-900 pt-6"
+              >
+                <LogIn size={20} /> Admin Access
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Dynamic Sections */}
+      <main>
+        <LiveStreamHero isAdmin={isAdmin} />
+        {sections.map((section) => (
+          <EditableSection key={section.sectionId} section={section} isAdmin={isAdmin}>
+            {section.sectionId === 'hero' ? (
+              <header className="relative pt-48 pb-24 px-6 min-h-[90vh] flex flex-col items-center justify-center text-center overflow-hidden">
+                <div className="absolute inset-0 glow-bg -z-10" />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 1.5, ease: "easeOut" }}
+                  className="absolute top-1/4 left-1/2 -translate-x-1/2 w-full h-full -z-20 opacity-20"
+                >
+                  <div className="w-[800px] h-[800px] bg-gold/20 blur-[120px] rounded-full mx-auto" />
+                </motion.div>
+
+                <div className="max-w-4xl">
+                  <h1 className="text-6xl md:text-8xl font-serif leading-[1.1] mb-8">
+                    {section.title.split(' ').map((word, i) => (
+                      <span key={i} className={word.toLowerCase() === 'soul' ? 'text-gold italic glow-text' : ''}>
+                        {word}{' '}
+                      </span>
+                    ))}
+                  </h1>
+                  <p className="text-xl md:text-2xl text-zinc-400 mb-10 max-w-2xl mx-auto font-light">
+                    {section.subtitle}
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <a href="#about" className="group flex items-center gap-2 bg-gold text-white px-8 py-4 rounded-full font-bold text-lg hover:shadow-[0_0_30px_rgba(212,175,55,0.4)] transition-all">
+                      Our Journey <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </a>
+                    <a href="#giving" className="px-8 py-4 rounded-full border border-zinc-800 hover:bg-zinc-900 transition-all text-lg font-medium text-zinc-300">
+                      Seed of Faith
+                    </a>
+                  </div>
+                </div>
+              </header>
+            ) : section.sectionId === 'about' ? (
+              <section id="about" className="py-24 px-6 border-y border-zinc-900 bg-zinc-950/50">
+                <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
+                  <div className="relative aspect-[4/5] rounded-3xl overflow-hidden group">
+                    <img 
+                      src={section.imageUrl || "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?q=80&w=2069&auto=format&fit=crop"} 
+                      alt="Ministry" 
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
+                  </div>
+                  <div>
+                    <h2 className="text-4xl md:text-5xl font-serif mb-8 glow-text">{section.title}</h2>
+                    <div className="prose prose-invert max-w-none text-zinc-400 text-lg leading-relaxed space-y-6">
+                      <Markdown>{section.content}</Markdown>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            ) : (
+              <section className="py-24 px-6 border-b border-zinc-900">
+                <div className="max-w-4xl mx-auto">
+                  <h2 className="text-4xl font-serif mb-8 glow-text">{section.title}</h2>
+                  {section.imageUrl && (
+                    <img src={section.imageUrl} className="w-full h-64 object-cover rounded-3xl mb-8" alt={section.title} referrerPolicy="no-referrer" />
+                  )}
+                  <div className="prose prose-invert text-zinc-400 text-lg">
+                    <Markdown>{section.content}</Markdown>
+                  </div>
+                </div>
+              </section>
+            )}
+          </EditableSection>
+        ))}
+      </main>
+
+      <PrayerSystem isAdmin={isAdmin} />
+
+      <GivingHub />
+
+      {/* Contact Section */}
+      <section id="contact" className="py-24 px-6 bg-zinc-900/20">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl font-serif mb-16 glow-text">Connect with Us</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <a href={`https://wa.me/${CONTACT_INFO.whatsapp.replace(/\s/g, '')}`} target="_blank" rel="noreferrer" className="p-8 rounded-3xl bg-zinc-900 border border-zinc-800 hover:border-green-500/50 transition-all group">
+              <MessageCircle className="w-8 h-8 text-green-500 mb-4 mx-auto group-hover:scale-110 transition-transform" />
+              <h3 className="font-bold mb-2">WhatsApp</h3>
+              <p className="text-zinc-500 text-sm">{CONTACT_INFO.whatsapp}</p>
+            </a>
+            <a href={`mailto:${CONTACT_INFO.email}`} className="p-8 rounded-3xl bg-zinc-900 border border-zinc-800 hover:border-gold/50 transition-all group">
+              <Mail className="w-8 h-8 text-gold mb-4 mx-auto group-hover:scale-110 transition-transform" />
+              <h3 className="font-bold mb-2">Email Us</h3>
+              <p className="text-zinc-500 text-sm">{CONTACT_INFO.email}</p>
+            </a>
+            <div className="p-8 rounded-3xl bg-zinc-900 border border-zinc-800">
+              <Phone className="w-8 h-8 text-zinc-400 mb-4 mx-auto" />
+              <h3 className="font-bold mb-2">Counseling</h3>
+              <p className="text-zinc-500 text-sm">Mon - Fri: 10am - 4pm</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 border-t border-zinc-900 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="flex flex-col items-center md:items-start text-center md:text-left">
+            <span className="text-xl font-bold glow-text tracking-tighter mb-1">{MINISTRY_NAME}</span>
+            <p className="text-zinc-600 text-sm">
+              &copy; <span 
+                onClick={login} 
+                className="cursor-default hover:text-gold/20 transition-colors"
+                title="Admin Access"
+              >{new Date().getFullYear()}</span> Photizo Porche. All Rights Reserved.
+            </p>
+          </div>
+          <div className="flex gap-8 text-xs text-zinc-500 uppercase tracking-widest font-medium">
+            <a href="#" className="hover:text-gold transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-gold transition-colors">Terms of Service</a>
+            {isAdmin && (
+              <span className="text-gold flex items-center gap-1 animate-pulse">
+                <Sparkles size={14} /> Admin Active
+              </span>
+            )}
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}

@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      // For this app, we'll allow the bootstrapped user
+      return isSignedIn() && (
+        request.auth.token.email == 'tersooaker@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Validation Helpers
+    function isValidSiteSettings(data) {
+      return data.ministryName is string && data.ministryName.size() <= 200 &&
+             data.prophetName is string && data.prophetName.size() <= 100 &&
+             data.whatsapp is string && data.whatsapp.size() <= 50 &&
+             data.email is string && data.email.size() <= 100;
+    }
+
+    function isValidPageSection(data) {
+      return data.sectionId is string && data.sectionId.size() <= 100 &&
+             data.title is string && data.title.size() <= 500 &&
+             data.content is string && data.content.size() <= 10000 &&
+             data.order is number;
+    }
+
+    function isValidGivingSystem(data) {
+      return data.options is list && data.options.size() <= 20;
+    }
+
+    function isValidPrayerRequest(data) {
+      return data.request is string && data.request.size() <= 2000 &&
+             data.isAnonymous is bool &&
+             data.status in ['pending', 'prayed', 'archived'];
+    }
+
+    function isValidStream(data) {
+      return data.streamId is string && data.platform in ['youtube', 'vimeo'] && data.isLive is bool;
+    }
+
+    // Rules
+    match /settings/global {
+      allow read: if true;
+      allow write: if isAdmin() && isValidSiteSettings(request.resource.data);
+    }
+
+    match /settings/giving {
+      allow read: if true;
+      allow write: if isAdmin() && isValidGivingSystem(request.resource.data);
+    }
+
+    match /settings/stream {
+      allow read: if true;
+      allow write: if isAdmin() && isValidStream(request.resource.data);
+    }
+
+    match /sections/{sectionId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidId(sectionId) && isValidPageSection(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /prayerRequests/{requestId} {
+      allow read: if isAdmin();
+      allow create: if isValidId(requestId) && isValidPrayerRequest(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    match /admins/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow write: if false; // Only manageable via console or higher privileges
+    }
+  }
+}
